@@ -234,6 +234,7 @@ public class BlackJack implements GamblingGame<BlackJackPlayer> {
             System.out.println("Dealing new hands");
             dealerHandSum=0;
             dealerHand.clear();
+            dealerBlackJack=false;
         }
     }
 
