@@ -11,7 +11,8 @@ public class BlackJack implements GamblingGame<BlackJackPlayer> {
     private Map<BlackJackPlayer, Integer> playerHandSum = new HashMap<>();
     private Map<BlackJackPlayer, Boolean> winLose = new HashMap<>();
     private Map<BlackJackPlayer, Boolean> blackJackFlag = new HashMap<>();
-    private Map <BlackJackPlayer, Boolean> AceFlag = null;
+    private Map <BlackJackPlayer, Boolean> AceFlag = new HashMap<>();
+    private Map <BlackJackPlayer, Boolean> bust = new HashMap<>();
     private int dealerHandSum;
     private List<Card> dealerHand = new ArrayList<>();
     private int maxPartySize;
@@ -20,7 +21,9 @@ public class BlackJack implements GamblingGame<BlackJackPlayer> {
 
     @Override
     public void play() {
-        while(exitFlag) {
+        while(!exitFlag) {
+            System.out.println("Welcome");
+            setBets();
             dealFirst2Cards();
             blackJackCheck();
             if (dealerBlackJack) {
@@ -28,15 +31,18 @@ public class BlackJack implements GamblingGame<BlackJackPlayer> {
             } else {
                 System.out.println(displayCard(dealerHand, "Dealer"));
                 for (BlackJackPlayer s : bets.keySet()) {
+                    System.out.println(displayCard(playerHand.get(s), s.getPerson().getName()));
                     playerOption(s);
                 }
             }
             postPlayerTurn();
             System.out.println("Do you want to exit this game?");
-            if (scanner.nextLine().equals("Yes"))
+            if (scanner.nextLine().equalsIgnoreCase("Yes"))
                 exitFlag=true;
             else
                 System.out.println("Dealing next hand");
+            if (deck.getSize() < 25)
+                deck=new Deck();
         }
     }
 
@@ -44,15 +50,21 @@ public class BlackJack implements GamblingGame<BlackJackPlayer> {
         dealerPlays();
         for (BlackJackPlayer s: bets.keySet()){
             winConditionCheck(s);
-            if (winLose.get(s))
+            if (winLose.get(s)) {
                 distributeWinningsToWinners(s);
+                System.out.println(s.getPerson().getName()+"wins!");
+            }
+            else
+                System.out.println(s.getPerson().getName()+" loses!");
             System.out.println(displayCard(playerHand.get(s),s.getPerson().getName()));
+            System.out.println(playerHandSum.get(s));
         }
+        System.out.println(dealerHandSum);
     }
 
     private void dealFirst2Cards() {
         Card temp;
-        for (int i = 0; i < 2; i++) {
+        for (int i=0;i<2;i++) {
             for (BlackJackPlayer s : bets.keySet()) {
                 temp = deck.getTopCard();
                 playerHand.get(s).add(temp);
@@ -60,26 +72,34 @@ public class BlackJack implements GamblingGame<BlackJackPlayer> {
                 if (temp.getCardFace().equals(CardFace.Ace))
                     AceFlag.put(s, true);
             }
-            dealerHand.add(deck.getTopCard());
+            temp=deck.getTopCard();
+            dealerHand.add(temp);
+            dealerHandSum+=cardValue(temp);
         }
         blackJackCheck();
     }
 
     public BlackJack(List<BlackJackPlayer> players) {
+        int count=0;
         for (BlackJackPlayer s: players){
             this.bets.put(s,null);
             this.playerHand.put(s,null);
-            if (bets.size()>maxPartySize){
+            if (count>maxPartySize){
                 System.out.println("Only 4 players are allowed to play!");
                 break;
             }
+            count++;
         }
     }
 
     public void dealerPlays(){
-        while (dealerHandSum<17){
-            dealerHand.add(deck.getTopCard());
-            dealerHandSum+=cardValue(dealerHand.get(dealerHand.size()-2));
+        Card temp;
+        if (bust.containsValue(false)) {
+            while (dealerHandSum < 17) {
+                temp = deck.getTopCard();
+                dealerHand.add(temp);
+                dealerHandSum += cardValue(temp);
+            }
         }
         System.out.println("Dealer got:");
         for (Card s: dealerHand){
@@ -98,32 +118,32 @@ public class BlackJack implements GamblingGame<BlackJackPlayer> {
     public void playerOption(BlackJackPlayer player) {
         String input;
         Card temp;
-        int cardValue = 0;
-        while (true) {
-            if(blackJackFlag.get(player))
-                break;
+        while (!blackJackFlag.get(player)) {
+            if (playerHandSum.get(player) > 21) {
+                if (AceFlag.get(player)) {
+                    playerHandSum.put(player,playerHandSum.get(player) -10);
+                    AceFlag.put(player, false);
+                } else {
+                    System.out.println("Busted!");
+                    winLose.put(player,false);
+                    break;
+                }
+            }
             System.out.println(player.getPerson().getName() + ", do you want to hit, double, or stay?");
             input = scanner.nextLine();
-            System.out.println(displayCard(playerHand.get(player), player.getPerson().getName()));
-            if (input == "hit") {
+            if (input.equalsIgnoreCase("hit")) {
                 temp = deck.getTopCard();
                 playerHand.get(player).add(temp);
-                cardValue += this.cardValue(temp);
+                playerHandSum.put(player,playerHandSum.get(player) + cardValue(temp));
                 if (temp.getCardFace().equals(CardFace.Ace))
                     AceFlag.put(player, true);
-            } else if (input == "stay")
+                System.out.println(displayCard(playerHand.get(player), player.getPerson().getName()));
+            } else if (input.equalsIgnoreCase("stay"))
                 break;
-            else if (input == "double") {
+            else if (input.equalsIgnoreCase("double")) {
                 playerHand.get(player).add(deck.getTopCard());
                 bets.put(player, bets.get(player) * 2);
                 break;
-            } else if (playerHandSum.get(player) > 21) {
-                if (AceFlag.get(player)) {
-                    cardValue -= 10;
-                } else {
-                    System.out.println("Busted!");
-                    break;
-                }
             }
         }
     }
@@ -202,23 +222,22 @@ public class BlackJack implements GamblingGame<BlackJackPlayer> {
             else
                 this.winLose.put(blackJackPlayer, false);
         }
+        else if (dealerHandSum>21){
+            if (playerSum>21)
+                winLose.put(blackJackPlayer,false);
+            else
+                winLose.put(blackJackPlayer,true);
+        }
         else {
-            if (blackJackFlag.get(blackJackPlayer))
+            if (dealerHandSum>21)
+                winLose.put(blackJackPlayer,true);
+            else if (blackJackFlag.get(blackJackPlayer))
                 this.winLose.put(blackJackPlayer, true);
             else if (playerSum > dealerHandSum && playerSum <= 21)
                 this.winLose.put(blackJackPlayer, true);
             else
                 this.winLose.put(blackJackPlayer, false);
         }
-    }
-
-    public BlackJackPlayer[] getWinner() {
-        List<BlackJackPlayer> winner = new ArrayList<>();
-        for (BlackJackPlayer s : winLose.keySet()){
-            if (winLose.get(s)==true)
-                winner.add(s);
-        }
-        return winner.toArray(new BlackJackPlayer[winner.size()]);
     }
 
     @Override
@@ -232,12 +251,12 @@ public class BlackJack implements GamblingGame<BlackJackPlayer> {
         for (BlackJackPlayer s: bets.keySet()){
             walletBalance = s.getBalance();
             try {
-                System.out.println("Hello" +s.getPerson().getName() + ", how much would you like to bet?");
+                System.out.println("Hello " +s.getPerson().getName() + ", how much would you like to bet?");
                 System.out.println();
                 bet=scanner.nextInt();
-                if (bet<walletBalance){
-                    System.out.println("Bet exceeds what you have, try again");
-                    continue;
+                if (bet>walletBalance){
+                    System.out.println("Bet exceeds what you have, try again. You have"+ walletBalance);
+                    bet=scanner.nextInt();
                 }
             } catch (InputMismatchException e){
                 System.out.println("Not a number, try again");
@@ -245,6 +264,10 @@ public class BlackJack implements GamblingGame<BlackJackPlayer> {
             }
             bets.put(s, bet);
             s.applyBet(bet);
+            playerHand.put(s,new ArrayList<>());
+            playerHandSum.put(s,0);
+            bust.put(s,false);
+            AceFlag.put(s,false);
         }
     }
 
