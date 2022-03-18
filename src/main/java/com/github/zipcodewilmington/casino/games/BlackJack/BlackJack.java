@@ -104,6 +104,7 @@ public class BlackJack implements GamblingGame<BlackJackPlayer> {
         Card temp;
         int cardValue = 0;
         while (true) {
+            System.out.println(displayCard(playerHand.get(player), player.getPerson().getName()));
             if(blackJackFlag.get(player))
                 break;
             if (playerHandSum.get(player) > 21) {
@@ -116,7 +117,6 @@ public class BlackJack implements GamblingGame<BlackJackPlayer> {
                     break;
                 }
             }
-            System.out.println(displayCard(playerHand.get(player), player.getPerson().getName()));
             input = console.getStringInput(player.getPerson().getName() + ", do you want to hit, double, or stay?");
             if (input.equalsIgnoreCase("hit")) {
                 temp = deck.getTopCard();
@@ -254,6 +254,7 @@ public class BlackJack implements GamblingGame<BlackJackPlayer> {
             playerHandSum.put(s, 0);
             AceFlag.put(s, false);
             winLose.put(s, null);
+            blackJackFlag.put(s, false);
         }
     }
 
