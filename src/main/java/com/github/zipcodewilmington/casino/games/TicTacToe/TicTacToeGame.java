@@ -55,13 +55,13 @@ public class TicTacToeGame implements Games<TicTacToePlayer> {
         Integer [] move = new Integer[2];
         move[0]= console.getIntegerInput(player1.getPerson().getName()+
                 ", which row would you like to place your mark?");
-        while (move[0]<0 || move[0]>3){
+        while (move[0]<1 || move[0]>3){
             move[0] = console.getIntegerInput(player1.getPerson().getName()+
                     "not valid row! Which row would you like to place your mark?");
         }
         move[1] = console.getIntegerInput(player1.getPerson().getName()+
                 ", which column would you like to place your mark?");
-        while (move[1]<0 || move[1]>3){
+        while (move[1]<1 || move[1]>3){
             move[1] = console.getIntegerInput(player1.getPerson().getName()+
                     "not valid column! Which row would you like to place your mark?");
         }
